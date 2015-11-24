@@ -1,0 +1,1 @@
+# logspout_logstash_container

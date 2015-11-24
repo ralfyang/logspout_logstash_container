@@ -1,0 +1,43 @@
+#!/bin/bash
+Command=$1
+ZinstRoot=`grep "^ZinstBaseRoot" /usr/bin/zinst | awk -F '=' '{print $2}' | sed 's/"//g'`
+
+## Zinst Set vriables
+docker_registry="registry.global.gravity:8443/logspout-logstash"
+logstash_server="10.53.15.219:7373"
+ports="8000:8000"
+
+## Export file name with direction
+docker_compose_file="$ZinstRoot/var/logspout-logstash.yml"
+
+Start(){
+export LOGSTASH_SERVER_URL=logstash://$logstash_server
+
+cat << EOF > $docker_compose_file
+logspout_service:
+ image: $docker_registry
+ volumes:
+  - /var/run/docker.sock:/tmp/docker.sock
+ environment:
+  - ROUTE_URIS=$LOGSTASH_SERVER_URL
+ ports:
+  - "$ports"
+EOF
+
+docker-compose -f $docker_compose_file up -d
+}
+
+Stop(){
+docker-compose -f $docker_compose_file stop
+docker-compose -f $docker_compose_file rm -f
+}
+
+## Case selection for service stop & restart
+	case  $Command in
+		start)
+			Start ;;
+		stop)
+			Stop ;;
+		restart)
+			Stop; sleep 1; Start ;;
+	esac
